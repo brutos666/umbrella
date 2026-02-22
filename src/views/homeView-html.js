@@ -14,12 +14,6 @@ function getHtmlView() {
             <label for="output">Markdown</label>
             <textarea readonly cols="100" rows=10 id="output" name="input"></textarea>
       </div>
-    </div>
-
-    <div class="content-container whiteframe">
-      <h1>Counter: <span id="counter">0</span></h1>
-      <button id="decrementBtn">Decrement</button>
-      <button id="incrementBtn">Increment</button>
     </div>`;
 }
 
