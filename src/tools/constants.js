@@ -6,9 +6,10 @@
 const SPECIFIC_RULE_TYPE = {
     Index: 'Index',
     Language: 'Language',
-    NewLine: 'NewLine',
+    Image: 'Image',
+    Source: 'Source',
     Basic: 'Basic',
-    Balise: 'Balise',
+    ReplaceElement: 'ReplaceElement'
 };
 
 const NEW_LINE = '\n';

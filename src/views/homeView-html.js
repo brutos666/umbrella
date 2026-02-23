@@ -7,14 +7,18 @@ function getHtmlView() {
     </header>
     <div class="row">
       <div class="col">
-          <label for="input">HTML</label>
-          <textarea cols="100" rows=10 id="input" name="input" ></textarea>
+        <label for="input">HTML</label>
+        <textarea cols="100" rows=10 id="input" name="input" ></textarea>
       </div>
       <div class="col">
-            <label for="output">Markdown</label>
-            <textarea readonly cols="100" rows=10 id="output" name="input"></textarea>
+        <label for="output">Markdown</label>
+        <textarea readonly cols="100" rows=10 id="output" name="input"></textarea>
       </div>
+    </div>
+    <div class="row">
+      <button id="sample-button">Load Sample</button>
     </div>`;
 }
+
 
 export default getHtmlView;

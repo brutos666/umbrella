@@ -4,8 +4,8 @@ import { SPECIFIC_RULE_TYPE, NEW_LINE } from './constants.js';
 /** @import {Rule} from "./rules.js" */
 
 function convertHtmlToMarkdown(textValue) {
-    var rules = getRules(),
-        htmlNode = getDomNode(textValue);
+    const rules = getRules();
+    const htmlNode = getDomNode(textValue);
     if (htmlNode.hasChildNodes()) {
         rules.forEach((rule) => convertNode(htmlNode, rule));
         return htmlNode.textContent;
@@ -13,8 +13,13 @@ function convertHtmlToMarkdown(textValue) {
 }
 
 function getDomNode(textValue) {
-    var dom = document.createElement('div');
-    dom.innerHTML = textValue;
+    const dom = document.createElement('div');
+    // Enlever les sauts de ligne qui ne sont pas entre des balises html
+    const cleanTextValueWithNoNewLine = textValue.replace(/>\s*\n\s*</g, '><');
+    // Enlever les scripts et les événeements pour éviter les problèmes de sécurité si jamais on voulait afficher le résultat en html
+    const cleanTextValueWithNoScript = cleanTextValueWithNoNewLine.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');    
+    const cleanTextValueWithNoEvent = cleanTextValueWithNoScript.replace(/ on\w+="[^"]*"/g, '');
+    dom.innerHTML = cleanTextValueWithNoEvent;
     return dom;
 }
 /**
@@ -24,11 +29,17 @@ function getDomNode(textValue) {
  * @returns {boolean} false si pas de noeud à remplacer
  */
 function convertNode(htmlNode, rule) {
-    var nodes = htmlNode.querySelectorAll(rule.htmlTag);
+    const nodes = htmlNode.querySelectorAll(rule.htmlTag);
     if (nodes.length === 0) {
         return false;
     }
     nodes.forEach((element, key) => {
+        if (rule.specificRuleType === SPECIFIC_RULE_TYPE.ReplaceElement) {
+            const spanNode = document.createElement('span');
+            spanNode.innerHTML = rule.markdownTag;
+            element.replaceWith(spanNode);
+            return;
+        }
         element.innerHTML = getElementValue(element, rule, key);
     });
     return true;
@@ -40,35 +51,36 @@ function convertNode(htmlNode, rule) {
  * @returns {boolean} false si pas de noeud à remplacer
  */
 function getElementValue(element, rule, index) {
-    var markdownTag = rule.markdownTag,
-        specificRuleType = rule.specificRuleType,
-        value,
-        language;
+    const markdownTag = rule.markdownTag;
+    const markdownTagEnd = rule.markdownTagEnd;
+    const specificRuleType = rule.specificRuleType;
+    let language;
     switch (specificRuleType) {
         case SPECIFIC_RULE_TYPE.Basic:
-            value = markdownTag + element.innerHTML + (rule.surround ? markdownTag : NEW_LINE);
-            break;
-        case SPECIFIC_RULE_TYPE.Balise:
-            value = '&lt;' + markdownTag + '&gt;' + element.innerHTML + '&lt;/' + markdownTag + '&gt;';
-            break;
+            return markdownTag + element.innerHTML + markdownTagEnd;
         case SPECIFIC_RULE_TYPE.Index:
-            value = index + markdownTag + element.innerHTML + NEW_LINE;
-            break;
+            const itemIndex = index + 1;
+            return itemIndex + markdownTag + element.innerHTML + markdownTagEnd;
+        case SPECIFIC_RULE_TYPE.Source:
+            const href = element.getAttribute('href');
+            if (href) {
+                return `${markdownTag + element.innerHTML + markdownTagEnd}(${href})`;
+            }
+            return markdownTag + element.innerHTML + markdownTagEnd;
+        case SPECIFIC_RULE_TYPE.Image:
+            const src = element.getAttribute('src');
+            const alt = element.getAttribute('alt');
+            if (src) {
+                return `${markdownTag}${alt ? alt : ''}${markdownTagEnd}(${src})`;
+            }
+            return markdownTag + element.innerHTML + markdownTagEnd;
         case SPECIFIC_RULE_TYPE.Language:
             language = getClassLanguage(element);
-            if (language.length === 0) {
-                value = markdownTag + element.innerHTML + markdownTag;
-            } else {
-                value = markdownTag + language + NEW_LINE + element.innerHTML + NEW_LINE + markdownTag + NEW_LINE;
-            }
-            break;
-        case SPECIFIC_RULE_TYPE.NewLine:
-            value = element.innerHTML + NEW_LINE;
-            break;
+            return language.length === 0 ? (markdownTag + element.innerHTML + markdownTagEnd) : (markdownTag + language + NEW_LINE + element.innerHTML + NEW_LINE + markdownTagEnd + NEW_LINE + NEW_LINE);
         default:
             break;
     }
-    return value;
+    return;
 }
 
 /**
@@ -77,7 +89,7 @@ function getElementValue(element, rule, index) {
  * @returns {string} chaîne contenant le langage ou une chaîne vide si pas de langage spécifié dans la liste des classes
  */
 function getClassLanguage(element) {
-    var languageClass = element.classList.values().find((className) => className.startsWith('language-'));
+    const languageClass = element.classList.values().find((className) => className.startsWith('language-'));
 
     return languageClass ? languageClass.substring(9) : '';
 }

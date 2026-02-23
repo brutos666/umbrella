@@ -1,5 +1,6 @@
 import createHomeView from '../views/homeView.js';
 import convertHtmlToMarkdown from '../tools/markdownConverter.js';
+import getHtmlSample from '../samples/htmlSamples.js';
 
 /**
  * Cette classe est responsable de la création de la vue et de sa mise à jour.
@@ -10,20 +11,26 @@ import convertHtmlToMarkdown from '../tools/markdownConverter.js';
 function createHomePage() {
   const onPaste = (event) => {
     const transfer = event.clipboardData || event.dataTransfer;
-    if (transfer.types.indexOf('text/html') > -1) {
-      var htmlText = transfer.getData('text/html'),
-        modifiedText = view.updateInputWithPast(htmlText);
-      // This is necessary to prevent the current document selection from being written to the clipboard.
-      event.preventDefault();
-      view.updateOutput(convertHtmlToMarkdown(modifiedText));
+    if (!transfer.types.includes('text/html')) {
+      return;
     }
+    const htmlText = transfer.getData('text/html');
+    const modifiedText = view.updateInputWithPast(htmlText);
+    // This is necessary to prevent the current document selection from being written to the clipboard.
+    event.preventDefault();
+    view.updateOutput(convertHtmlToMarkdown(modifiedText));
   };
   const onInput = (event) => {
-    var initialText = event.target.value;
+    const initialText = event.target.value;
     view.updateOutput(convertHtmlToMarkdown(initialText));
   };
+  const onSampleClick = () => {
+    const initialText = getHtmlSample();
+    view.updateInput(initialText);
+    view.updateOutput(convertHtmlToMarkdown(initialText));
+  }
 
-  const viewProps = { onPaste, onInput };
+  const viewProps = { onPaste, onInput, onSampleClick };
   const view = createHomeView(viewProps);
   return view;
 }

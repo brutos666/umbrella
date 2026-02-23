@@ -7,14 +7,6 @@
       "request": "launch",
       "reAttach": true,
       "file": "${workspaceFolder}/index.html"
-    },
-    {
-      "name": "Launch localhost",
-      "type": "firefox",
-      "request": "launch",
-      "reAttach": true,
-      "url": "http://localhost/index.html",
-      "webRoot": "${workspaceFolder}"
     }
   ]
 }
