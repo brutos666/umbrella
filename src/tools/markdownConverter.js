@@ -1,5 +1,5 @@
 import { getRules } from './rules.js';
-import { SPECIFIC_RULE_TYPE, NEW_LINE } from './constants.js';
+import { RULE_TYPE, NEW_LINE } from './constants.js';
 
 /** @import {Rule} from "./rules.js" */
 
@@ -28,7 +28,7 @@ function getDomNode(textValue) {
  * @param {Rule} rule - Règle de conversion
  */
 function convertNode(htmlNode, rule) {
-    if (rule.specificRuleType === SPECIFIC_RULE_TYPE.ReplaceElement) {
+    if (rule.specificRuleType === RULE_TYPE.ReplaceElement) {
         const nodes = htmlNode.querySelectorAll(rule.htmlTag);
         nodes.forEach((element, key) => {
             const spanNode = document.createElement('span');
@@ -45,21 +45,6 @@ function convertNode(htmlNode, rule) {
             node.innerHTML = getElementValue(node, rule, key);
         }
     });
-    /*
-    const nodes = htmlNode.querySelectorAll(rule.htmlTag);
-    if (nodes.length === 0) {
-        return;
-    }
-    nodes.forEach((element, key) => {
-        if (rule.specificRuleType === SPECIFIC_RULE_TYPE.ReplaceElement) {
-            const spanNode = document.createElement('span');
-            spanNode.innerHTML = rule.markdownTag;
-            element.replaceWith(spanNode);
-            return;
-        }
-        element.innerHTML = getElementValue(element, rule, key);
-    });
-    */
 }
 /**
  * Convertit le contenu en markdown
@@ -73,32 +58,38 @@ function getElementValue(element, rule, index) {
     const specificRuleType = rule.specificRuleType;
     let language;
     switch (specificRuleType) {
-        case SPECIFIC_RULE_TYPE.Basic:
+        case RULE_TYPE.Basic:
             return markdownTag + element.innerHTML + markdownTagEnd;
-        case SPECIFIC_RULE_TYPE.Index:
+        case RULE_TYPE.Paragraphe:
+            const divNode = document.createElement('div');
+            divNode.innerHTML = markdownTag + element.innerHTML + markdownTagEnd + NEW_LINE + NEW_LINE;
+            return divNode.innerHTML;
+        case RULE_TYPE.ListIndex:
             const itemIndex = index + 1;
             return itemIndex + markdownTag + element.innerHTML + markdownTagEnd;
-        case SPECIFIC_RULE_TYPE.Source:
+        case RULE_TYPE.Url:
             const href = element.getAttribute('href');
             if (href) {
-                return `${markdownTag + element.innerHTML + markdownTagEnd}(${href})`;
+                return `[${element.innerHTML}](${href})`;
             }
             return element.innerHTML;
-        case SPECIFIC_RULE_TYPE.Image:
+        case RULE_TYPE.Image:
             const src = element.getAttribute('src');
             const alt = element.getAttribute('alt');
             if (src) {
-                return `${markdownTag}${alt ? alt : ''}${markdownTagEnd}(${src})`;
+                return `![${alt ? alt : ''}](${src})`;
             }
             return element.innerHTML;
-        case SPECIFIC_RULE_TYPE.Language:
+        case RULE_TYPE.Code:
             language = getClassLanguage(element);
-            return language.length === 0 ? markdownTag + element.innerHTML + markdownTagEnd : markdownTag + language + NEW_LINE + element.innerHTML + NEW_LINE + markdownTagEnd + NEW_LINE + NEW_LINE;
-        case SPECIFIC_RULE_TYPE.Recursive:
+            return language.length === 0 ? '```' + element.innerHTML + '```' : '```' + language + NEW_LINE + element.innerHTML + NEW_LINE + '```' + NEW_LINE + NEW_LINE;
+        case RULE_TYPE.Recursive:
             const copieElement = element.cloneNode(true);
-            convertNode(copieElement, { ...rule, specificRuleType: SPECIFIC_RULE_TYPE.Basic });
+            convertNode(copieElement, { ...rule, specificRuleType: RULE_TYPE.Basic });
             return copieElement.innerHTML;
-        case SPECIFIC_RULE_TYPE.Table:
+        case RULE_TYPE.Lines:
+            return rule.markdownTag + element.innerHTML.replace(/\n/g, rule.markdownTagEnd + NEW_LINE + rule.markdownTag) + rule.markdownTagEnd;
+        case RULE_TYPE.Table:
             let widths = getColumnsWidth(element);
             const tableElement = element.cloneNode(true);
             updateWidths(tableElement, widths);
@@ -107,25 +98,25 @@ function getElementValue(element, rule, index) {
                 htmlTag: 'thead > tr > th:last-child',
                 markdownTag: '',
                 markdownTagEnd: '|\n',
-                specificRuleType: SPECIFIC_RULE_TYPE.Basic,
+                specificRuleType: RULE_TYPE.Basic,
             });
             convertNode(tableElement, {
                 htmlTag: 'tbody > tr > td:last-child',
                 markdownTag: '',
                 markdownTagEnd: '|\n',
-                specificRuleType: SPECIFIC_RULE_TYPE.Basic,
+                specificRuleType: RULE_TYPE.Basic,
             });
             convertNode(tableElement, {
                 htmlTag: 'thead > tr > th',
                 markdownTag: '|',
                 markdownTagEnd: '',
-                specificRuleType: SPECIFIC_RULE_TYPE.Basic,
+                specificRuleType: RULE_TYPE.Basic,
             });
             convertNode(tableElement, {
                 htmlTag: 'tbody  > tr > td',
                 markdownTag: '|',
                 markdownTagEnd: '',
-                specificRuleType: SPECIFIC_RULE_TYPE.Basic,
+                specificRuleType: RULE_TYPE.Basic,
             });
             return tableElement.innerHTML;
         default:
